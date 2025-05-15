@@ -76,7 +76,16 @@ ui <- dashboardPage(
                                    plotlyOutput("talentPlot", height = 550))
                         ),
                         column(width = 3,
-                               sliderInput("maxAge", "Maximum age", min = 16, max = 23, value = 21),
+                               sliderInput("maxAge",
+                                           "Maximum age",
+                                           min = 16, max = 23,
+                                           value = 21),
+                               ## NEW — mean-rating range
+                               sliderInput("ratingRange",
+                                           "Mean rating range",
+                                           min   = 0,  max = 100,          # adjust if your scale differs
+                                           value = c(50, 100),             # default [min, max]
+                                           step  = 1),
                                radioButtons("posFilter", "Position", choices = c("Overall","GK","DEF","MID","FWD"),
                                             inline = TRUE)
                         ),

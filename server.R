@@ -21,7 +21,11 @@ server <- function(input, output, session) {
 
   # DATA for lollipop (top-N youngsters)
   lolliData <-  reactive({
-    dt <- player_attributes_melted[age <= input$maxAge & role == roleSelected()]
+    dt <- player_attributes_melted[age <= input$maxAge &
+                                     role == roleSelected() &
+                                     between(mean_rate,
+                                            input$ratingRange[1],
+                                            input$ratingRange[2])]
     dt
   })
 
