@@ -33,7 +33,8 @@ server <- function(input, output, session) {
   radarData <- reactive({
     focus      <- roleSelected()
     role_vars  <- position_attribute_map[[focus]]
-    top_player_nms     <- lolliData()[, unique(player_name)][1:10]
+    dt     <- lolliData()
+    top_player_nms <- dt[order(-mean_rate)][1:10, player_name]
 
     melt(player_attributes_merge[player_name %in% top_player_nms,
                                  c("player_name", role_vars), with = FALSE],
