@@ -110,18 +110,22 @@ player_attributes_melted <- player_attributes_melted[, .(mean_rate = mean(rating
 
 
 home <- match[ , .(
+  match_api_id,
   date,
   team_api_id   = home_team_api_id,
   goals_for     = home_team_goal,
   goals_against = away_team_goal,
-  season
+  season,
+  home_away = "home"
 )]
 away <- match[ , .(
+  match_api_id,
   date,
   team_api_id   = away_team_api_id,
   goals_for     = away_team_goal,
   goals_against = home_team_goal,
-  season
+  season,
+  home_away = "away"
 )]
 
 
@@ -137,37 +141,32 @@ match_long[, unique(season)]
 
 
 
-# ── 1  Define windows as vectors -----------------------------------------
+# Defineseasons
 before_seasons <- c("2008/2009", "2009/2010", "2010/2011",
-                    "2011/2012", "2012/2013")          # < 50 % era
+                    "2011/2012")          # < 50 %
 
-after_seasons  <- c("2013/2014", "2014/2015", "2015/2016")  # > 70 % era
+after_seasons  <- c("2012/2013", "2013/2014", "2014/2015", "2015/2016")  # > 70 %
 
-# ── 2  Long-form matches (one row per team per match) --------------------
-# Assume you already have `match_long` with columns:
-#   team_api_id | season | result  (1 win, 0 draw, -1 loss)
-# If not, reuse the `as_long()` step from earlier.
 
-# ── 3  Window A stats ----------------------------------------------------
 winA <- match_long[ season %in% before_seasons,
                     .(games_A = .N,
                       wins_A  = sum(result == 1)),
                     by = team_api_id ]
 
-# ── 4  Window B stats ----------------------------------------------------
+
 winB <- match_long[ season %in% after_seasons,
                     .(games_B = .N,
                       wins_B  = sum(result == 1)),
                     by = team_api_id ]
 
-# ── 5  Combine + calculate win-rates ------------------------------------
+#Combine + calculate win-rates
 improve <- merge(winA, winB, by = "team_api_id")
 improve[ , `:=`(
   win_A = wins_A / games_A * 100,
   win_B = wins_B / games_B * 100
 )]
 
-# ── 6  Select significantly improved teams -------------------------------
+# Select significantly improved teams
 big_improvers <- improve[ win_A < 50 & win_B > 70 ]
 setorder(big_improvers, -win_B)
 
@@ -196,11 +195,111 @@ big_improvers_dt_sum <- big_improvers_dt[ , .(
 ), by = .(team_long_name, team_api_id, season)]
 
 
-big_improvers_dt_sum[, winrate := wins / games * 100]
+big_improvers_dt_sum[, win_rate := wins / games * 100]
 
+
+# ggplot(big_improvers_dt_sum, aes(season, win_rate,
+#                                                   colour = team_long_name,
+#                                                   group  = team_long_name)) +
+#   geom_line(linewidth = 1) +
+#   geom_point(size = 2) +
+#   facet_wrap(~ home_away, nrow = 2) +
+#   scale_y_continuous(limits = c(0,100)) +
+#   labs(
+#     title = "Seasonal Win-Rate for Top Improvers",
+#     subtitle = paste("Filtered:", paste("home_away_choice", collapse = ", ")),
+#     x = "Season",
+#     y = "Win Rate (%)",
+#     colour = "Team"
+#   ) +
+#   theme_minimal(base_size = 13) +
+#   theme(
+#     axis.text.x = element_text(angle = 45, hjust = 1),
+#     legend.position = "bottom"
+#   )
+
+
+
+
+
+
+home_barca <- match[home_team_api_id == "8634" , .(
+  match_api_id,
+  date,
+  team_api_id   = home_team_api_id,
+  goals_for     = home_team_goal,
+  goals_against = away_team_goal,
+  season,
+  home_away = "home"
+)]
+
+away_barca <- match[away_team_api_id == "8634",
+                    .(
+                      match_api_id,
+                      date,
+                      team_api_id   = away_team_api_id,
+                      goals_for     = away_team_goal,
+                      goals_against = home_team_goal,
+                      season,
+                      home_away = "away"
+                    )]
+
+## use tudyverse
+
+home_barca <- match %>%
+  filter(home_team_api_id == "8634") %>%
+  select(match_api_id, date,
+         team_api_id = home_team_api_id,
+         team_played_against = away_team_api_id,
+         goals_for = home_team_goal,
+         goals_against = away_team_goal,
+         season) %>%
+  mutate(home_away = "home")
+
+away_barca <- match %>%
+  filter(away_team_api_id == "8634") %>%
+  select(match_api_id, date,
+         team_api_id = away_team_api_id,
+         team_played_against = home_team_api_id,
+         goals_for = away_team_goal,
+         goals_against = home_team_goal,
+         season) %>%
+  mutate(home_away = "away")
+
+# Combine home and away data
+
+barca <- rbind(home_barca, away_barca)
+
+
+barca <- merge(barca,
+               team[, .(
+                 team_api_id,
+                 team_long_name,
+                 team_short_name
+               )],
+               by.x = "team_played_against",
+               by.y = "team_api_id")
+
+
+barca <- barca %>%
+  mutate(goals_diff = goals_for - goals_against,
+         result = sign(goals_diff),
+         points= case_when(
+           goals_diff >= 1 ~ 3,  # Win
+           goals_diff == 0 ~ 1,  # Draw
+           goals_diff < 0 ~ 0  # Loss
+         ))
+
+
+
+
+setDT(barca)
 all_obj_shiny <- list(
+  barca = barca,
   player_attributes_melted = player_attributes_melted,
-  player_attributes_merge = player_attributes_merge
+  player_attributes_merge = player_attributes_merge,
+  big_improvers_dt = big_improvers_dt,
+  big_improvers_dt_sum = big_improvers_dt_sum
 )
 
 
