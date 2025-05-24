@@ -108,6 +108,96 @@ player_attributes_melted <- player_attributes_melted[, .(mean_rate = mean(rating
                                                      by = .(player_name, age, role)] %>%
   unique(by = c("player_name", "role"))
 
+
+home <- match[ , .(
+  date,
+  team_api_id   = home_team_api_id,
+  goals_for     = home_team_goal,
+  goals_against = away_team_goal,
+  season
+)]
+away <- match[ , .(
+  date,
+  team_api_id   = away_team_api_id,
+  goals_for     = away_team_goal,
+  goals_against = home_team_goal,
+  season
+)]
+
+
+match_long <- rbindlist(list(home, away))
+
+# result & points
+match_long[ , result := sign(goals_for - goals_against)]              #  1 / 0 / −1
+match_long[ , pts    := fifelse(result ==  1, 3,
+                          fifelse(result ==  0, 1, 0))]
+
+
+match_long[, unique(season)]
+
+
+
+# ── 1  Define windows as vectors -----------------------------------------
+before_seasons <- c("2008/2009", "2009/2010", "2010/2011",
+                    "2011/2012", "2012/2013")          # < 50 % era
+
+after_seasons  <- c("2013/2014", "2014/2015", "2015/2016")  # > 70 % era
+
+# ── 2  Long-form matches (one row per team per match) --------------------
+# Assume you already have `match_long` with columns:
+#   team_api_id | season | result  (1 win, 0 draw, -1 loss)
+# If not, reuse the `as_long()` step from earlier.
+
+# ── 3  Window A stats ----------------------------------------------------
+winA <- match_long[ season %in% before_seasons,
+                    .(games_A = .N,
+                      wins_A  = sum(result == 1)),
+                    by = team_api_id ]
+
+# ── 4  Window B stats ----------------------------------------------------
+winB <- match_long[ season %in% after_seasons,
+                    .(games_B = .N,
+                      wins_B  = sum(result == 1)),
+                    by = team_api_id ]
+
+# ── 5  Combine + calculate win-rates ------------------------------------
+improve <- merge(winA, winB, by = "team_api_id")
+improve[ , `:=`(
+  win_A = wins_A / games_A * 100,
+  win_B = wins_B / games_B * 100
+)]
+
+# ── 6  Select significantly improved teams -------------------------------
+big_improvers <- improve[ win_A < 50 & win_B > 70 ]
+setorder(big_improvers, -win_B)
+
+big_improvers_ids <- big_improvers$team_api_id
+
+big_improvers_dt <- match_long[ team_api_id %in% big_improvers_ids]
+
+## connect with team to get team names
+
+
+big_improvers_dt <- merge(big_improvers_dt,
+                            team[team_api_id %in% big_improvers_ids, .(
+                              team_api_id,
+                              team_long_name,
+                              team_short_name
+                            )],
+                            by = "team_api_id")
+
+
+
+big_improvers_dt_sum <- big_improvers_dt[ , .(
+  games = .N,
+  wins   = sum(result == 1),
+  goals_for     = sum(goals_for),
+  goals_against = sum(goals_against)
+), by = .(team_long_name, team_api_id, season)]
+
+
+big_improvers_dt_sum[, winrate := wins / games * 100]
+
 all_obj_shiny <- list(
   player_attributes_melted = player_attributes_melted,
   player_attributes_merge = player_attributes_merge
