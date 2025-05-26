@@ -1,7 +1,7 @@
 library(tidyverse)
 library(data.table)
 library(here)
-library(ggmap)
+#library(ggmap)
 library(rnaturalearth)
 library(sf)
 data_path <- here( "data")

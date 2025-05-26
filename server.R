@@ -46,7 +46,7 @@ server <- function(input, output, session) {
       )
   })
 
-  # 1) Track which country is selected on the map
+  # Track which country is selected on the map
   selectedCountry <- reactiveVal(NULL)
   observeEvent(input$countryMap_shape_click, {
     selectedCountry(input$countryMap_shape_click$id)
@@ -55,10 +55,10 @@ server <- function(input, output, session) {
     selectedCountry(input$countryMap_shape_mouseover$id)
   })
 
-  # 2) Reactive: teams in that country_id
+  #  Reactive: teams in that country_id
   countryTeams <- reactive({
     req(selectedCountry())
-    # team_country has columns:
+    # team_country
     #   country_id, name (league name), team_long_name, team_short_name
     team_country[country_id == selectedCountry(),
                  .(League       = name,

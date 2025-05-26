@@ -28,7 +28,7 @@ ui <- dashboardPage(
     ## BODY
     dashboardBody(
 
-        ## MAP TAB (full‑width leaflet)
+        ## MAP TAB
         tabItems(
           tabItem(tabName = "map",
 
