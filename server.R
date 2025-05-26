@@ -1,6 +1,169 @@
 server <- function(input, output, session) {
 
-  # ── 0.  Helper: translate radio to role string ─────────────────────────
+
+
+
+
+
+
+    #
+    filtered_barca <- reactive({
+      if (input$homeAwayOpp == "both") {
+        barca
+      } else {
+        barca[home_away == input$homeAwayOpp]
+      }
+    })
+
+    #
+    summary_opponents <- reactive({
+      dt <- filtered_barca()[ ,
+                              .(
+                                games  = .N,
+                                wins   = sum(result ==  1),
+                                draws  = sum(result ==  0),
+                                losses = sum(result == -1)
+                              ),
+                              by = .(team_played_against, team_long_name)
+      ]
+      dt[ , win_rate := wins / games * 100 ]
+    })
+
+    #
+    selected_opponents <- reactive({
+      dt <- summary_opponents()
+      if (input$oppStrength == "Strongest") {
+        dt <- dt[order(-win_rate)]
+      } else {
+        dt <- dt[order( win_rate)]
+      }
+      head(dt, 4)
+    })
+
+    #
+    plot_dt <- reactive({
+      dt <- selected_opponents()
+      melted <- melt(
+        dt,
+        id.vars     = c("team_played_against", "team_long_name", "games"),
+        measure.vars= c("wins", "draws", "losses"),
+        variable.name = "result_label",
+        value.name    = "n"
+      )
+      #
+      melted[ , result_label := factor(result_label,
+                                       levels = c("wins","draws","losses"),
+                                       labels = c("Win","Draw","Loss")
+      )]
+      melted[ , pct := round(n / games * 100) ]
+      melted
+    })
+
+    # ── 5. Expand into a 10×10 grid of “cells” for waffle chart ─────────────
+    cells <- reactive({
+      plot_dt()[ , {
+        reps  <- rep(result_label, times = pct)
+        ncell <- length(reps)
+        data.table(
+          team          = team_long_name[1],
+          result        = reps,
+          percentage    = rep(pct, times = pct),
+          total_matches = rep(games, times = ncell),
+          col           = rep(1:10, length.out = ncell),
+          row           = rep(1:10, each = 10)[1:ncell]
+        )
+      }, by = .(team_played_against, team_long_name)]
+    })
+
+    # ── 6. Render interactive waffle‐style Plotly chart ──────────────────────
+    output$oppFacet <- renderPlotly({
+      d <- cells()
+      p <- ggplot(d, aes(
+        x = col, y = row,
+        fill = result,
+        text = paste0(
+          "<b>", team, "</b><br>",
+          result, ": ", percentage, "%<br>",
+          "Total matches: ", total_matches
+        )
+      )) +
+        geom_tile(colour = "white") +
+        scale_fill_manual(values = c(
+          Win  = "#2ECC71",
+          Draw = "#F1C40F",
+          Loss = "#E74C3C"
+        )) +
+        facet_wrap(~ team, ncol = 2) +
+        coord_equal() +
+        theme_minimal() +
+        theme(
+          axis.text      = element_blank(),
+          axis.title     = element_blank(),
+          panel.grid     = element_blank(),
+          strip.text     = element_text(face = "bold"),
+          legend.position = "bottom"
+        ) +
+        labs(fill = "Result")
+
+      ggplotly(p, tooltip = "text")
+    })
+
+
+
+
+
+  # Reactive expression for most improved teams:
+
+  mostImprovedTeams <- reactive({
+    # Filter based on home/away choice
+    if (input$homeAwayChoice == "both") {
+      big_improvers_dt
+    } else {
+      big_improvers_dt[home_away == input$homeAwayChoice]
+    }
+  })
+
+
+  improvedTeamsdf <- reactive({
+
+    big_improvers_dt_sum <- mostImprovedTeams()[ , .(
+      games = .N,
+      wins   = sum(result == 1),
+      goals_for     = sum(goals_for),
+      goals_against = sum(goals_against)
+    ), by = .(team_long_name, team_api_id, season)]
+
+    big_improvers_dt_sum[, win_rate := wins / games * 100]
+    big_improvers_dt_sum
+
+  })
+
+
+  output$trendPlot <- renderPlotly({
+    # Get the data for the selected teams
+    dt <- improvedTeamsdf()
+
+    # Create the plot
+    p <- ggplot(dt, aes(x = season, y = win_rate,
+                        color = team_long_name,
+                        group = team_long_name,
+                        text = paste("Team:", team_long_name,
+                                     "<br>Season:", season,
+                                     "<br>Win Rate:", round(win_rate, 1), "%"
+                        ))) +
+      geom_line() +
+      geom_point() +
+      labs(title = "Win Rate Trend of Most Improved Teams",
+           x = "Season",
+           y = "Win Rate (%)") +
+      theme_minimal()
+
+    # Convert to Plotly object
+    ggplotly(p, tooltip = "text")
+  })
+
+
+
 
   roleSelected <- reactive({
     # Position filter logic

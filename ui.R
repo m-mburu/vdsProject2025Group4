@@ -10,10 +10,10 @@ list2env(all_obj_shiny, envir =.GlobalEnv)
 ui <- dashboardPage(
     skin = "blue",
 
-    ## ----- 1  HEADER -----
+    ## HEADER
     dashboardHeader(title = "FC Barcelona – 2008‑2016 Analysis"),
 
-    ## ----- 2  SIDEBAR -----
+    ## SIDEBAR
     dashboardSidebar(
         sidebarMenu(
             menuItem("Overview map",    tabName = "map",       icon = icon("map")),
@@ -24,10 +24,10 @@ ui <- dashboardPage(
         )
     ),
 
-    ## ----- 3  BODY -----
+    ## BODY
     dashboardBody(
 
-        ## 3.1 MAP TAB (full‑width leaflet)
+        ## MAP TAB (full‑width leaflet)
         tabItems(
             tabItem(tabName = "map",
                     fluidRow(
@@ -36,12 +36,19 @@ ui <- dashboardPage(
                     )
             ),
 
-            ## 3.2 IMPROVED TEAMS
+            ## IMPROVED TEAMS
             tabItem(tabName = "improve",
                     fluidRow(
-                        box(width = 12, title = "Most‑Improved Teams (2008‑2016)",
+                        box(width = 10, title = "Most‑Improved Teams (2008‑2016)",
                             plotlyOutput("trendPlot", height = 500),
-                            helpText("Hover a line to see rating change; use legend to toggle teams."))
+
+
+                            helpText("Hover a line to see rating change; use legend to toggle teams.")),
+                        box(width = 2, title = "Filters",
+                            selectInput("homeAwayChoice", "Home/Away",
+                                        choices = c("both","home","away"), selected = "Both"),
+                            helpText("Select home/away or both to filter the teams.")
+                        )
                     )
             ),
 
@@ -59,13 +66,21 @@ ui <- dashboardPage(
                     )
             ),
 
-            ## 3.4 OPPONENTS (faceted bars/waffle)
+            ## OPPONENTS (faceted bars/waffle)
             tabItem(tabName = "barcaOpp",
                     fluidRow(
-                        box(width = 12, title = "Barça’s Best & Worst Opponents",
-                            plotlyOutput("oppFacet", height = 550))
+                        box(width = 9, title = "Barça’s Best & Worst Opponents",
+                            plotlyOutput("oppFacet", height = 550)),
+                        box(width = 3, title = "Filters",
+                            # home/away choice
+                            radioButtons("homeAwayOpp", "Home/Away",
+                                         choices = c("Both" = "both", "Home" = "home", "Away" = "away"),
+                                         selected = "Both"),
+                            # opponent sringest weakest teams
+                            selectInput("oppStrength", "Opponent Strength",
+                                        choices = c("Strongest","Weakest"), selected = "Strongest")
                     )
-            ),
+            )),
 
             ## 3.5 YOUNG TALENTS (lollipop + filters)
             tabItem(tabName = "talents",
