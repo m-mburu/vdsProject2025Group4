@@ -1,10 +1,12 @@
 library(tidyverse)
 library(data.table)
 library(here)
-
-
+library(ggmap)
+library(rnaturalearth)
+library(sf)
 data_path <- here( "data")
 vds2445 <- here(data_path,"VDS2425 Football")
+
 list.files(vds2445)
 
 
@@ -25,8 +27,34 @@ for (i in seq_along(file_paths)) {
   }
 }
 
+# Geocode  lon , lat for teams
 
-# Define player attribute groupings by position
+eu_countries <- c("Belgium","France","Germany","Italy",
+                  "Netherlands","Poland","Portugal",
+                  "Spain","Switzerland")
+
+ne_countries <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+  filter(admin %in% eu_countries) %>%
+  select(country = admin, geometry)
+
+# b) UK states, then pick England + Scotland
+uk_states <- rnaturalearth::ne_states(country = "United Kingdom", returnclass = "sf")
+eng_scot  <- uk_states %>%
+  filter(geonunit %in% c("England","Scotland"))  %>%
+  group_by(geonunit) %>%           # “England” and “Scotland”
+  summarize(                     # this automatically unions the geometries
+    geometry = st_union(geometry),
+    .groups = "drop"
+  ) %>%
+  st_as_sf() %>%
+  select(country = geonunit, geometry)
+
+# c) Combine into one sf
+map_sf <- bind_rows(ne_countries, eng_scot)
+
+
+map_sf <- left_join(map_sf, country, by = c("country" = "name")) %>%
+  left_join(league, by  = "id")
 
 # Goalkeeper-specific attributes
 gk_vars <- c(
@@ -110,6 +138,7 @@ player_attributes_melted <- player_attributes_melted[, .(mean_rate = mean(rating
 
 
 home <- match[ , .(
+  league_id,
   match_api_id,
   date,
   team_api_id   = home_team_api_id,
@@ -119,6 +148,7 @@ home <- match[ , .(
   home_away = "home"
 )]
 away <- match[ , .(
+  league_id,
   match_api_id,
   date,
   team_api_id   = away_team_api_id,
@@ -294,12 +324,58 @@ barca <- barca %>%
 
 
 setDT(barca)
+
+
+intro_text <- HTML("
+        <h4>Project Overview</h4>
+        <p>
+          <strong>Group 4 – Football Dataset</strong><br/>
+          This project supports FC Barcelona’s coach in making data‐driven strategic decisions
+          for the 2016–2017 season by exploring match, player, and team metadata from 2008 to 2016
+          across Europe’s top leagues. We aim to uncover recruitment targets, performance trends,
+          and tactical insights—such as possession’s impact on wins—to guide Barcelona’s planning.
+        </p>
+
+        <h4>Main Features & Connections</h4>
+        <p>
+          Our dataset spans 11 premier European leagues and includes:
+          <ul>
+            <li><strong>Match Data:</strong> Teams, scores, lineups, and outcomes.</li>
+            <li><strong>Player Info:</strong> Demographics and FIFA‐style skill ratings.</li>
+            <li><strong>Team Attributes:</strong> Tactical metrics like build‐up speed and defensive pressure.</li>
+            <li><strong>Events & Possession:</strong> Goals, shots, crosses, fouls, and possession statistics.</li>
+            <li><strong>League/Country Context:</strong> Enables cross‐league comparisons via common IDs.</li>
+          </ul>
+        </p>
+
+        <h4>Guiding Questions</h4>
+        <p>
+          <ol>
+            <li>Which young talents (≤ 21) should Barcelona recruit?</li>
+            <li>Which clubs improved most between 2008–2012 and 2013–2016?</li>
+            <li>Against which opponents has Barça fared best and worst?</li>
+            <li>How strongly does ball possession predict match outcomes?</li>
+          </ol>
+        </p>
+      ")
+
+league_team <- match_long %>%
+  distinct(league_id, team_api_id)
+team_country <- merge(league, country[, .(id, country = name)],
+              by.x = "country_id", by.y = "id") %>%
+  merge(league_team, by.x = "id", by.y = "league_id") %>%
+  merge(team[, .(team_api_id, team_long_name, team_short_name)],
+              by = "team_api_id")
+
 all_obj_shiny <- list(
   barca = barca,
   player_attributes_melted = player_attributes_melted,
   player_attributes_merge = player_attributes_merge,
   big_improvers_dt = big_improvers_dt,
-  big_improvers_dt_sum = big_improvers_dt_sum
+  big_improvers_dt_sum = big_improvers_dt_sum,
+  map_sf = map_sf,
+  intro_text = intro_text,
+  team_country = team_country
 )
 
 

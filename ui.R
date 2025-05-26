@@ -4,6 +4,7 @@ library(leaflet)
 library(plotly)
 library(tidyverse)
 library(data.table)
+library(DT)
 
 load("data/all_obj_shiny.rda")
 list2env(all_obj_shiny, envir =.GlobalEnv)
@@ -29,12 +30,46 @@ ui <- dashboardPage(
 
         ## MAP TAB (full‑width leaflet)
         tabItems(
-            tabItem(tabName = "map",
-                    fluidRow(
-                        box(width = 12, title = "European Clubs – Stadium Locations",
-                            leafletOutput("euroMap", height = 600))
+          tabItem(tabName = "map",
+
+                  ## Row 1: Map & Intro
+                  fluidRow(
+                    column(width = 6,
+                           box(
+                             width       = NULL,
+                             title       = "European Countries with Football Leagues in the data",
+                             solidHeader = TRUE,
+                             status      = "primary",
+                             height      = "600px",
+                             leafletOutput("countryMap", height = "600px")
+                           )
+                    ),
+                    column(width = 6,
+                           box(
+                             width       = NULL,
+                             title       = "Project Description",
+                             solidHeader = TRUE,
+                             status      = "primary",
+                             height      = "600px",
+
+                             div(style = "height:100%; overflow-y:auto; padding-right:10px;",
+                                 uiOutput("introSection")
+                             )
+                           )
                     )
-            ),
+                  ),
+
+                  ## Row 2: Teams table below
+                  fluidRow(
+                    box(
+                      width       = 12,
+                      title       = "Clubs in Selected Country",
+                      solidHeader = TRUE,
+                      status      = "primary",
+                      DTOutput("countryTeams", height = "450px")
+                    )
+                  )
+          ),
 
             ## IMPROVED TEAMS
             tabItem(tabName = "improve",
@@ -75,7 +110,7 @@ ui <- dashboardPage(
                             # home/away choice
                             radioButtons("homeAwayOpp", "Home/Away",
                                          choices = c("Both" = "both", "Home" = "home", "Away" = "away"),
-                                         selected = "Both"),
+                                         selected = "both"),
                             # opponent sringest weakest teams
                             selectInput("oppStrength", "Opponent Strength",
                                         choices = c("Strongest","Weakest"), selected = "Strongest")
@@ -98,8 +133,8 @@ ui <- dashboardPage(
                                ## NEW — mean-rating range
                                sliderInput("ratingRange",
                                            "Mean rating range",
-                                           min   = 0,  max = 100,          # adjust if your scale differs
-                                           value = c(50, 100),             # default [min, max]
+                                           min   = 0,  max = 100,
+                                           value = c(50, 100),
                                            step  = 1),
                                radioButtons("posFilter", "Position", choices = c("Overall","GK","DEF","MID","FWD"),
                                             inline = TRUE)
