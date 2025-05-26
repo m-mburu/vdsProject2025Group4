@@ -1,6 +1,85 @@
 server <- function(input, output, session) {
 
 
+  output$introSection <- renderUI({
+    intro_text
+  })
+
+
+
+  output$countryMap <- renderLeaflet({
+
+    map_sf <- map_sf %>%
+      mutate(
+        label =
+          paste0(
+            "<b>", country, "</b><br/>",
+            "<small><i>League:</i> ", name, "</small>"
+
+        )
+      )
+    leaflet(map_sf) %>%
+      addProviderTiles("CartoDB.Positron") %>%
+      addPolygons(
+        fillColor   = ~colorFactor("Blues", domain = name)(name),
+        weight      = 1,
+        color       = "#444",
+        fillOpacity = 0.7,
+        layerId     = ~id,
+        label = ~lapply(label, HTML),
+        labelOptions = labelOptions(
+          direction = "auto",
+          textsize  = "16px",    # <- larger text
+          opacity   = 0.9,
+          offset    = c(0, 0)
+        )
+      ) %>%
+      addCircleMarkers(
+        lng = 2.1228, lat = 41.3809,
+        label = "FC Barcelona (Camp Nou)",
+        color = "red", radius = 6, fillOpacity = 1
+      ) %>%
+      setView(
+        lng  = 10,    # roughly central Europe
+        lat  = 50,    # northern hemisphere midpoint
+        zoom = 4      # adjust between 3 (wider) to 6 (tighter)
+      )
+  })
+
+  # 1) Track which country is selected on the map
+  selectedCountry <- reactiveVal(NULL)
+  observeEvent(input$countryMap_shape_click, {
+    selectedCountry(input$countryMap_shape_click$id)
+  })
+  observeEvent(input$countryMap_shape_mouseover, {
+    selectedCountry(input$countryMap_shape_mouseover$id)
+  })
+
+  # 2) Reactive: teams in that country_id
+  countryTeams <- reactive({
+    req(selectedCountry())
+    # team_country has columns:
+    #   country_id, name (league name), team_long_name, team_short_name
+    team_country[country_id == selectedCountry(),
+                 .(League       = name,
+                   Team         = team_long_name,
+                   Short        = team_short_name)]
+  })
+
+  # 3) Render as a DataTable
+  output$countryTeams <- renderDT({
+    datatable(
+      countryTeams(),
+      rownames = FALSE,
+      options  = list(
+        pageLength = 10,
+        scrollY    = "300px",
+        dom        = "tp"
+      )
+    )
+  })
+
+
 
 
 
