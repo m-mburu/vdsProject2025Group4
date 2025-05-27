@@ -5,6 +5,7 @@ library(plotly)
 library(tidyverse)
 library(data.table)
 library(DT)
+library(sf)
 
 load("data/all_obj_shiny.rda")
 list2env(all_obj_shiny, envir =.GlobalEnv)
