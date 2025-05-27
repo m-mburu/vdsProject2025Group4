@@ -64,6 +64,107 @@ eu_countries <- c("Belgium","France","Germany","Italy",
 # save(map_sf, file = here(data_path, "map_sf.rda"))
 
 load(here(data_path, "map_sf.rda"))
+
+## NEW: INTEGRATION OF POSSESSION APP
+match_table_possession <- data.table() # Initialize to handle errors 
+possession_data <- data.table() 
+available_leagues_with_possession <- character(0) 
+
+if(exists("match") && exists("league") && exists("team")){ 
+match_table_possession <- copy(match) # Use the 'match' table already loaded 
+possession_data <- tryCatch({ 
+fread(file.path(data_path, "Match_Possesion.csv"))
+}, error = function(e) { 
+    warning(paste("Match_Possession.csv not loaded:", e$message)) 
+    data.table() # Return empty data.table if error 
+  }) 
+ 
+  # Data Preprocessing for Possession 
+  if (nrow(possession_data) > 0 && "id" %in% names(possession_data)) { # Check if 'id' column exists 
+    possession_data[, id := as.numeric(id)] # Ensure 'id' is numeric if it exists 
+    common_match_ids <- intersect(match_table_possession$match_api_id, possession_data$id) 
+    match_table_possession <- match_table_possession[match_api_id %in% common_match_ids] 
+    possession_data <- possession_data[id %in% common_match_ids] 
+    setnames(possession_data, "id", "match_api_id") 
+    setkey(possession_data, match_api_id) 
+    setkey(match_table_possession, match_api_id) 
+ 
+    match_table_possession[, win_margin := home_team_goal - away_team_goal] 
+    match_table_possession[, outcome := fifelse(win_margin > 0, "Home Win", fifelse(win_margin < 0, "Away 
+Win", "Draw"))] 
+ 
+    leagues_for_possession <- league[, .(league_id = id, league = name)] 
+    setkey(leagues_for_possession, league_id) 
+    match_table_possession <- merge(match_table_possession, leagues_for_possession, by = "league_id", all.x 
+= TRUE) 
+ 
+    if (nrow(possession_data) > 0) { # Check again as it might be empty after filtering 
+      match_table_possession <- merge(match_table_possession, possession_data, by = "match_api_id", all.x = 
+TRUE, suffixes = c("", "_possession")) 
+      if ("homepos" %in% names(match_table_possession) && "awaypos" %in% 
+names(match_table_possession)) { 
+        match_table_possession[, possession_diff := homepos - awaypos] 
+      } else { 
+        match_table_possession[, `:=` (homepos = NA_real_, awaypos = NA_real_, possession_diff = NA_real_)] 
+      } 
+    } else { 
+      match_table_possession[, `:=` (homepos = NA_real_, awaypos = NA_real_, possession_diff = NA_real_)] 
+    } 
+  } else { # if possession_data is empty or no 'id' column 
+    match_table_possession[, win_margin := home_team_goal - away_team_goal]
+and outcome 
+    match_table_possession[, outcome := fifelse(win_margin > 0, "Home Win", fifelse(win_margin < 0, "Away 
+Win", "Draw"))] 
+    leagues_for_possession <- league[, .(league_id = id, league = name)] 
+    setkey(leagues_for_possession, league_id) 
+    if("league_id" %in% names(match_table_possession)) setkey(match_table_possession, league_id) else 
+warning("league_id not in match_table_possession") 
+ 
+    match_table_possession <- merge(match_table_possession, leagues_for_possession, by = "league_id", all.x 
+= TRUE) 
+    match_table_possession[, `:=` (homepos = NA_real_, awaypos = NA_real_, possession_diff = NA_real_)] 
+    warning("Possession data could not be fully processed or merged.") 
+  } 
+ 
+  # This check ensures team_table is loaded and has the required columns 
+  if (exists("team") && "team_api_id" %in% names(team) && "team_long_name" %in% names(team)) { 
+      team_id_to_name <- setNames(team$team_long_name, team$team_api_id) 
+      if ("home_team_api_id" %in% names(match_table_possession)) { 
+        match_table_possession[, home_team_name := team_id_to_name[as.character(home_team_api_id)]] 
+      } 
+      if ("away_team_api_id" %in% names(match_table_possession)) { 
+        match_table_possession[, away_team_name := team_id_to_name[as.character(away_team_api_id)]] 
+      } 
+  } else { 
+      warning("Team table not available or missing columns for team name mapping in possession data.") 
+  } 
+ 
+ 
+  if ("season" %in% names(match_table_possession)) { 
+    match_table_possession[, season_year := as.numeric(gsub("/.*", "", season))] 
+  } else { 
+    warning("Season column not found in match_table_possession for season_year calculation.") 
+    match_table_possession[, season_year := NA_integer_] 
+  } 
+ 
+ 
+  if (nrow(match_table_possession[!is.na(possession_diff)]) > 0 && "league" %in% 
+names(match_table_possession)) { 
+      available_leagues_with_possession <- unique(match_table_possession[!is.na(possession_diff), league]) 
+  } else { 
+      available_leagues_with_possession <- character(0) # Empty if no possession data or league column 
+      warning("No leagues with possession data found, or 'league' column missing.") 
+  } 
+ 
+} else { 
+  warning("Initial Match, League, or Team data not loaded. Possession analysis cannot proceed.") 
+  # Create empty versions to prevent errors in shiny app if these are accessed 
+  match_table_possession <- data.table(match_api_id=integer(), league_id=integer(), 
+home_team_goal=integer(), away_team_goal=integer(), season=character())
+  available_leagues_with_possession <- character(0) 
+} 
+## END OF MODIFICATION 
+
 # Goalkeeper-specific attributes
 gk_vars <- c(
   "gk_diving", "gk_handling", "gk_kicking",
@@ -384,6 +485,10 @@ all_obj_shiny <- list(
   map_sf = map_sf,
   intro_text = intro_text,
   team_country = team_country
+  ## NEW: INTEGRATION OF POSSESSION APP
+  match_table_possession = match_table_possession, 
+  available_leagues_with_possession = available_leagues_with_possession 
+  ## END OF MODIFICATION
 )
 
 
