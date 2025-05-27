@@ -102,6 +102,49 @@ ui <- dashboardPage(
                     )
             ),
 
+            # NEW:INTEGRATION OF POSSESSION APP
+            tabItem(tabName = "possess",
+                    titlePanel("Possession vs. Match Outcome"),
+                    sidebarLayout(
+                        sidebarPanel(
+                            selectInput("league_possession", "Select League:", # Renamed to avoid conflict if 'league' is used elsewhere
+                              # choices should be dynamically populated from available_leagues_with_possession
+                                    choices = c("All", if(length(available_leagues_with_possession) > 0) available_leagues_with_possession else "No Leagues Available"),
+                                    selected = "All"
+                  ),
+                  # Check if match_table_possession and season_year exist and are not all NA
+                  if (exists("match_table_possession") && "season_year" %in% names(match_table_possession) && !all(is.na(match_table_possession$season_year))) {
+                    sliderInput("season_range_possession", "Select Season Range:", # Renamed
+                                min = min(match_table_possession$season_year, na.rm = TRUE),
+                                max = max(match_table_possession$season_year, na.rm = TRUE),
+                                value = c(min(match_table_possession$season_year, na.rm = TRUE), max(match_table_possession$season_year, na.rm = TRUE)),
+                                sep = "" # Corrected from ...
+                    )
+                  } else {
+                    p("Season data for possession analysis not available.")
+                  },
+                  if (exists("match_table_possession") && "win_margin" %in% names(match_table_possession) && !all(is.na(match_table_possession$win_margin))) {
+                      sliderInput("win_margin_possession", "Select Win Margin:", # Renamed
+                                min = min(match_table_possession$win_margin, na.rm = TRUE),
+                                max = max(match_table_possession$win_margin, na.rm = TRUE),
+                                value = c(min(match_table_possession$win_margin, na.rm = TRUE), max(match_table_possession$win_margin, na.rm = TRUE)),
+                                step = 1
+                    )
+                  } else {
+                    p("Win margin data for possession analysis not available.")
+                  },
+                  selectInput("plot_type_possession", "Select Plot Type:", # Renamed
+                              choices = c("Violin Plot", "Beeswarm Plot"),
+                              selected = "Violin Plot"
+                  )
+                ),
+                mainPanel(
+                    plotlyOutput("possessionOutcomePlot", height = "500px") # Changed ID from possBox
+                )
+              )
+        ),
+        # END OF MODIFICATION  
+                    
             ## OPPONENTS (faceted bars/waffle)
             tabItem(tabName = "barcaOpp",
                     fluidRow(
