@@ -17,11 +17,21 @@ server <- function(input, output, session) {
             "<small><i>League:</i> ", name, "</small>"
 
         )
-      )
+      ) %>%
+      st_set_geometry("geometry")
+
+    library(viridis)
+
+    pal <- colorFactor(
+      palette = viridis(length(unique(map_sf$country))),
+      domain  = map_sf$country
+    )
+
+
     leaflet(map_sf) %>%
       addProviderTiles("CartoDB.Positron") %>%
       addPolygons(
-        fillColor   = ~colorFactor("Blues", domain = name)(name),
+        fillColor   = ~ pal(country),
         weight      = 1,
         color       = "#444",
         fillOpacity = 0.7,
@@ -29,7 +39,7 @@ server <- function(input, output, session) {
         label = ~lapply(label, HTML),
         labelOptions = labelOptions(
           direction = "auto",
-          textsize  = "16px",    # <- larger text
+          textsize  = "16px",
           opacity   = 0.9,
           offset    = c(0, 0)
         )
@@ -37,12 +47,18 @@ server <- function(input, output, session) {
       addCircleMarkers(
         lng = 2.1228, lat = 41.3809,
         label = "FC Barcelona (Camp Nou)",
-        color = "red", radius = 6, fillOpacity = 1
+        color = "red", radius = 6, fillOpacity = 1,
+        labelOptions = labelOptions(
+          direction = "auto",
+          textsize  = "16px",
+          opacity   = 0.9,
+          offset    = c(0, 0)
+        )
       ) %>%
       setView(
-        lng  = 10,    # roughly central Europe
-        lat  = 50,    # northern hemisphere midpoint
-        zoom = 4      # adjust between 3 (wider) to 6 (tighter)
+        lng  = 10,
+        lat  = 48,
+        zoom = 4.4
       )
   })
 
@@ -106,16 +122,18 @@ server <- function(input, output, session) {
                               by = .(team_played_against, team_long_name)
       ]
       dt[ , win_rate := wins / games * 100 ]
+      dt <- dt[games>5]
     })
 
     #
     selected_opponents <- reactive({
       dt <- summary_opponents()
       if (input$oppStrength == "Strongest") {
-        dt <- dt[order(-win_rate)]
+        dt <- dt[order(win_rate)]
       } else {
-        dt <- dt[order( win_rate)]
+        dt <- dt[order( -win_rate)]
       }
+
       head(dt, 4)
     })
 

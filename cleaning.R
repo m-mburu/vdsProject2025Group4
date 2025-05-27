@@ -4,6 +4,7 @@ library(here)
 #library(ggmap)
 library(rnaturalearth)
 library(sf)
+library(htmltools)
 data_path <- here( "data")
 vds2445 <- here(data_path,"VDS2425 Football")
 
@@ -33,29 +34,36 @@ eu_countries <- c("Belgium","France","Germany","Italy",
                   "Netherlands","Poland","Portugal",
                   "Spain","Switzerland")
 
-ne_countries <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
-  filter(admin %in% eu_countries) %>%
-  select(country = admin, geometry)
+# ne_countries <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+#   filter(admin %in% eu_countries) %>%
+#   select(country = admin, geometry)
+#
+# save(ne_countries, file = here(data_path, "ne_countries.rda"))
+#
+# load(here(data_path, "ne_countries.rda"))
+#
+# # b) UK states, then pick England + Scotland
+# uk_states <- rnaturalearth::ne_states(country = "United Kingdom", returnclass = "sf")
+# eng_scot  <- uk_states %>%
+#   filter(geonunit %in% c("England","Scotland"))  %>%
+#   group_by(geonunit) %>%           # “England” and “Scotland”
+#   summarize(                     # this automatically unions the geometries
+#     geometry = st_union(geometry),
+#     .groups = "drop"
+#   ) %>%
+#   st_as_sf() %>%
+#   select(country = geonunit, geometry)
+#
+# # c) Combine into one sf
+# map_sf <- bind_rows(ne_countries, eng_scot)
+#
+#
+# map_sf <- left_join(map_sf, country, by = c("country" = "name")) %>%
+#   left_join(league, by  = "id")
+#
+# save(map_sf, file = here(data_path, "map_sf.rda"))
 
-# b) UK states, then pick England + Scotland
-uk_states <- rnaturalearth::ne_states(country = "United Kingdom", returnclass = "sf")
-eng_scot  <- uk_states %>%
-  filter(geonunit %in% c("England","Scotland"))  %>%
-  group_by(geonunit) %>%           # “England” and “Scotland”
-  summarize(                     # this automatically unions the geometries
-    geometry = st_union(geometry),
-    .groups = "drop"
-  ) %>%
-  st_as_sf() %>%
-  select(country = geonunit, geometry)
-
-# c) Combine into one sf
-map_sf <- bind_rows(ne_countries, eng_scot)
-
-
-map_sf <- left_join(map_sf, country, by = c("country" = "name")) %>%
-  left_join(league, by  = "id")
-
+load(here(data_path, "map_sf.rda"))
 # Goalkeeper-specific attributes
 gk_vars <- c(
   "gk_diving", "gk_handling", "gk_kicking",
