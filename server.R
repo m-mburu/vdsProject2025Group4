@@ -92,7 +92,7 @@ server <- function(input, output, session) {
                    Short        = team_short_name)]
   })
 
-  # 3) Render as a DataTable
+  #  Render as a DataTable
   output$countryTeams <- renderDT({
 
     df = countryTeams()
@@ -169,7 +169,7 @@ server <- function(input, output, session) {
       melted
     })
 
-    # ── 5. Expand into a 10×10 grid of “cells” for waffle chart ─────────────
+    # Expand into a 10×10 grid of cells for waffle chart
     cells <- reactive({
       plot_dt()[ , {
         reps  <- rep(result_label, times = pct)
