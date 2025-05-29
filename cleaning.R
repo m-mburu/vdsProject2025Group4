@@ -383,7 +383,7 @@ improve[ , `:=`(
 big_improvers <- improve[ win_A < 50 & win_B > 70 ]
 setorder(big_improvers, -win_B)
 
-big_improvers_ids <- big_improvers$team_api_id
+big_improvers_ids <- c(big_improvers$team_api_id, 8634) # Add FC Barcelona's team_api_id
 
 big_improvers_dt <- match_long[ team_api_id %in% big_improvers_ids]
 
