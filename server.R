@@ -42,6 +42,16 @@ server <- function(input, output, session) {
           textsize  = "16px",
           opacity   = 0.9,
           offset    = c(0, 0)
+        ),
+
+        popup         = ~lapply(label, HTML),
+        popupOptions  = popupOptions(
+          closeOnClick = FALSE,
+          autoClose    = FALSE,
+          direction = "auto",
+          textsize  = "16px",
+          opacity   = 0.9,
+          offset    = c(0, 0)
         )
       ) %>%
       addCircleMarkers(
@@ -84,15 +94,18 @@ server <- function(input, output, session) {
 
   # 3) Render as a DataTable
   output$countryTeams <- renderDT({
-    datatable(
-      countryTeams(),
-      rownames = FALSE,
-      options  = list(
-        pageLength = 10,
-        scrollY    = "300px",
-        dom        = "tp"
-      )
-    )
+
+    df = countryTeams()
+    n_col = ncol(df)-1
+    datatable(df,
+              rownames = FALSE,
+              style = "bootstrap4", class = 'cell-border stripe',
+              options = list(scrollX = TRUE,
+                             pageLength = 10,
+                             scrollY    = "300px",
+                             dom        = "tp",
+                             columnDefs = list(list(className = 'dt-center', targets = 0:n_col))
+              ))
   })
 
 
@@ -250,7 +263,7 @@ server <- function(input, output, session) {
                         ))) +
       geom_line() +
       geom_point() +
-      labs(title = "Win Rate Trend of Most Improved Teams",
+      labs(title = "Win Rate Trend of Most Improved Teams Compared to Barca",
            x = "Season",
            y = "Win Rate (%)") +
       theme_minimal()
@@ -447,9 +460,9 @@ output$possessionOutcomePlot <- renderPlotly({
       type    = "violin",
       color   = ~outcome,
       colors  = c("Home Win" = "green", "Draw" = "blue", "Away Win" = "red"),
-      box     = list(visible = TRUE),    # show inner box-plot
-      meanline= list(visible = TRUE),    # optional mean line
-      points  = "all",                   # show all points
+      box     = list(visible = TRUE),
+      meanline= list(visible = TRUE),
+      points  = "all",
       hoverinfo = "text",
       hovertext = ~paste(
         "Outcome: ", outcome,
@@ -460,8 +473,8 @@ output$possessionOutcomePlot <- renderPlotly({
       layout(
         title      = "Possession Difference by Match Outcome",
         xaxis      = list(title = "Match Outcome"),
-        yaxis      = list(title = "Home – Away Possession (%)"),
-        violinmode = "group"              # place violins side-by-side rather than overlay
+        yaxis      = list(title = "Home – Away Possession (%)")
+        #violinmode = "group"              # place violins side-by-side rather than overlay
       )
   } else { # Beeswarm Plot
     ggp <- ggplot(matches_to_plot, aes(x = outcome, y = possession_diff, color = outcome, text = hover_text)) +
