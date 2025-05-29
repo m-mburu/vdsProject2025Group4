@@ -6,7 +6,7 @@ library(tidyverse)
 library(data.table)
 library(DT)
 library(sf)
-
+library(ggbeeswarm)
 load("data/all_obj_shiny.rda")
 list2env(all_obj_shiny, envir =.GlobalEnv)
 ui <- dashboardPage(
@@ -88,19 +88,19 @@ ui <- dashboardPage(
                     )
             ),
 
-            ## 3.3 POSSESSION
-            tabItem(tabName = "possess",
-                    fluidRow(
-                        column(width = 3,
-                               selectInput("teamSelect", "Choose team", choices = c("FC Barcelona","All teams")),
-                               checkboxInput("showPoints", "Show raw points", TRUE)
-                        ),
-                        column(width = 9,
-                               box(width = 12, title = "Possession by Match Outcome",
-                                   plotlyOutput("possBox", height = 500))
-                        )
-                    )
-            ),
+            # ## 3.3 POSSESSION
+            # tabItem(tabName = "possess",
+            #         fluidRow(
+            #             column(width = 3,
+            #                    selectInput("teamSelect", "Choose team", choices = c("FC Barcelona","All teams")),
+            #                    checkboxInput("showPoints", "Show raw points", TRUE)
+            #             ),
+            #             column(width = 9,
+            #                    box(width = 12, title = "Possession by Match Outcome",
+            #                        plotlyOutput("possBox", height = 500))
+            #             )
+            #         )
+            # ),
 
             # NEW:INTEGRATION OF POSSESSION APP
             tabItem(tabName = "possess",
@@ -143,8 +143,8 @@ ui <- dashboardPage(
                 )
               )
         ),
-        # END OF MODIFICATION  
-                    
+        # END OF MODIFICATION
+
             ## OPPONENTS (faceted bars/waffle)
             tabItem(tabName = "barcaOpp",
                     fluidRow(
