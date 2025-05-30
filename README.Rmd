@@ -1,5 +1,5 @@
 ---
-title: "Group 4 Football Visualization"
+title: "Group 4 Football Visualization( FC Barcelona 2008–2016 Analysis Shiny App)"
 output: github_document
 date: "2025-05-15"
 ---
@@ -7,4 +7,79 @@ date: "2025-05-15"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+
+
+
+This Shiny dashboard is for visualization of European football with a focus of helping FC Baracelona prepare for 2017 season
+
+
+### Prerequisites
+
+
+1. **R** (version 4.0.0 or higher)
+2. The file `data/all_obj_shiny.rda` must be in a folder named `data` at the project root.
+3. **Internet access** (to install missing packages).
+
+
+
+### Required R Packages
+
+We’ll use the following packages:
+
+```{r}
+
+pkg_df <- read.csv("pkg_df.csv")
+knitr::kable(pkg_df, caption = "Required R Packages for the Shiny App")
+```
+
+```{r}
+packages <- pkg_df$Package
+packages
+```
+
+
+
+
+### Setup Instructions
+
+1. **Clone or download** this repository to your machine.
+
+2.  Click .Rproj file to open the project in RStudio
+
+
+3. **Install** the required packages by copying the helper function below into your R session (or at the top of your `app.R`), then run it:
+
+   ```r
+   installPackages <- function(pkgs) {
+     for (pkg in pkgs) {
+       if (!pkg %in% rownames(installed.packages())) {
+         message(sprintf("Installing missing package: %s", pkg))
+         install.packages(pkg, dependencies = TRUE)
+       } else {
+         message(sprintf("Package already installed: %s", pkg))
+       }
+       library(pkg, character.only = TRUE)
+     }
+   }
+
+   # Run to install & load:
+   installPackages(packages)
+   ```
+
+4. In R console  the following
+
+   ```r
+   library(shiny)
+   runApp()
+   ```
+
+
+
+### Running via RStudio
+
+1. In RStudio, open `ui.R or server.R or app.r` file in the editor pane.
+2. Click the **Run App** button (top-right of the editor pane).
+A new window or RStudio viewer pane will open with the dashboard.
+
 

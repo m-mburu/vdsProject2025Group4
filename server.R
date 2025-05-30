@@ -464,11 +464,7 @@ output$possessionOutcomePlot <- renderPlotly({
       meanline= list(visible = TRUE),
       points  = "all",
       hoverinfo = "text",
-      hovertext = ~paste(
-        "Outcome: ", outcome,
-        "<br>Possession Δ: ", possession_diff, "%",
-        "<br>Match ID: ", match_api_id
-      )
+      hovertext = ~hover_text
     ) %>%
       layout(
         title      = "Possession Difference by Match Outcome",
