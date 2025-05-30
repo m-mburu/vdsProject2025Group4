@@ -620,4 +620,4 @@ team_country <- merge(league, country[, .(id, country = name)],
 # )
 
 
-save(all_obj_shiny, file = here(data_path, "all_obj_shiny.rda"))
+#save(all_obj_shiny, file = here(data_path, "all_obj_shiny.rda"))
