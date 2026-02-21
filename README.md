@@ -4,7 +4,9 @@ App)
 2025-05-15
 
 This Shiny dashboard is for visualization of European football with a
-focus of helping FC Baracelona prepare for 2017 season
+focus of helping FC Baracelona prepare for 2017 season. The app can be
+found [here
+(Shinyapps.io)](https://mmburu.shinyapps.io/vdsProject2025Group4/).
 
 ### Prerequisites
 

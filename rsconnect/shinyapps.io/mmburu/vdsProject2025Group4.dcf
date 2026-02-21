@@ -1,0 +1,13 @@
+name: vdsProject2025Group4
+title: vdsProject2025Group4
+username: mmburu
+account: mmburu
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16730408
+bundleId: 11611345
+url: https://mmburu.shinyapps.io/vdsProject2025Group4/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: cleaning.R|github.md|pkg_df.csv|README.md|README.Rmd|scripts/barca_prep.R
